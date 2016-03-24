@@ -1,5 +1,3 @@
-package com.test;
-
 import rx.Observable;
 
 import java.util.*;

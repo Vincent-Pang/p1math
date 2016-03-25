@@ -1,14 +1,31 @@
 import rx.Observable;
-
 import java.util.*;
 
 public class Main
 {
     public static void main(String[] args)
     {
-	    // write your code here
-        System.out.println("hello");
+        System.out.println("p1math");
 
+        long startTime = System.nanoTime();
+
+        // both method1 and method2 have same result, but method1 is faster
+        // faster
+        method1();
+
+        // slower
+        //method2();
+
+        long endTime = System.nanoTime() - startTime;
+
+        System.out.println();
+        System.out.println("Elapsed Time = " + endTime + " nano sec");
+        System.out.println("Elapsed Time = " + endTime / 1000 + " micro sec");
+        System.out.println("Elapsed Time = " + endTime / 1000 / 1000+ " milli sec");
+    }
+
+    private static void method1()
+    {
         final int RESULT = 111;
 
         Observable<Integer> ab$ = create20To99();
@@ -20,17 +37,17 @@ public class Main
             .subscribe(ab ->
             {
                 cd$
-                    .filter(cd -> containAllDifferentDigit(ab, cd))
+                    .filter(cd -> containAllDifferentDigit(ab, cd)) // filter in when ab, cd are all different
                     .subscribe(cd ->
                     {
                         ef$
-                            .filter(ef -> ef == ab - cd)
-                            .filter(ef -> containAllDifferentDigit(ab, cd, ef))
+                            .filter(ef -> ef == ab - cd)    // filter in ab - cd == ef
+                            .filter(ef -> containAllDifferentDigit(ab, cd, ef)) // filter in when ab, cd, ef are all different
                             .subscribe(ef ->
                             {
                                 gh$
-                                    .filter(gh -> RESULT == ab - cd + gh)
-                                    .filter(gh -> containAllDifferentDigit(ab, cd, ef, gh))
+                                    .filter(gh -> RESULT == ef + gh)   // filter in ef + gh == 111
+                                    .filter(gh -> containAllDifferentDigit(ab, cd, ef, gh)) // filter in when ab, cd, ed, gh are all different
                                     .subscribe(gh ->
                                     {
                                         System.out.println("-----");
@@ -42,6 +59,58 @@ public class Main
                                     });
                             });
                     });
+            });
+    }
+
+    private static void method2()
+    {
+        final int RESULT = 111;
+
+        Observable<Integer> ab$ = create20To99();
+        Observable<Integer> cd$ = create20To99();
+        Observable<Integer> ef$ = create20To99();
+        Observable<Integer> gh$ = create20To99();
+
+        ab$.join(cd$
+                , integer -> Observable.never()
+                , integer -> Observable.never()
+                , (ab, cd) ->
+                {
+                    // join all combination of ab and cd
+                    int[] tuple = {ab, cd};
+                    return tuple;
+                })
+            .filter(Main::containAllDifferentDigit) // filter in when ab, cd are all different
+            .join(ef$
+                , integer -> Observable.never()
+                , integer -> Observable.never()
+                , (abcd, ef) ->
+                {
+                    // join the above result with ef
+                    int[] tuple = {abcd[0], abcd[1], ef};
+                    return tuple;
+                })
+            .filter(tuple -> tuple[0] - tuple[1] == tuple[2]) // filter in ab - cd == ef
+            .filter(Main::containAllDifferentDigit) // filter in when ab, cd, ef are all different
+            .join(gh$
+                , integer -> Observable.never()
+                , integer -> Observable.never()
+                , (abcdef, gh) ->
+                {
+                    // join the above result with gh
+                    int[] tuple = {abcdef[0], abcdef[1], abcdef[2], gh};
+                    return tuple;
+                })
+            .filter(tuple -> tuple[2] + tuple[3] == RESULT) // filter in ef + gh == 111
+            .filter(Main::containAllDifferentDigit) // filter in when ab, cd, ed, gh are all different
+            .subscribe(tuple ->
+            {
+                System.out.println("-----");
+                System.out.println("ab = " + tuple[0]);
+                System.out.println("cd = " + tuple[1]);
+                System.out.println("ef = " + tuple[2]);
+                System.out.println("gh = " + tuple[3]);
+                System.out.println("ab - cd + gh = " + (tuple[0] - tuple[1] + tuple[3]));
             });
     }
 
